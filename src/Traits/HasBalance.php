@@ -2,8 +2,9 @@
 
 namespace Geow\Balance\Traits;
 
+use Geow\Balance\Concerns\BalanceInterface;
 use Illuminate\Database\Eloquent\Casts\Attribute;
-use Geow\Balance\Models\Balance;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Number;
 
@@ -13,7 +14,7 @@ trait HasBalance
 
     public function credits(): MorphMany
     {
-        return $this->morphMany(Balance::class, 'balanceable');
+        return $this->morphMany(config('balance.model'), 'balanceable');
     }
 
     public function withCurrency(string $currency): self
@@ -37,17 +38,17 @@ trait HasBalance
         );
     }
 
-    public function increaseCredit(int $amount, ?string $reason = null): Balance
+    public function increaseCredit(int $amount, ?string $reason = null): BalanceInterface
     {
         return $this->createCredit($amount, $reason);
     }
 
-    public function decreaseCredit(int $amount, ?string $reason = null): Balance
+    public function decreaseCredit(int $amount, ?string $reason = null): BalanceInterface
     {
         return $this->createCredit(-1 * abs($amount), $reason);
     }
 
-    public function setCredit(int $amount, ?string $reason = null): Balance
+    public function setCredit(int $amount, ?string $reason = null): BalanceInterface
     {
         return $this->createCredit($amount, $reason);
     }
@@ -62,7 +63,7 @@ trait HasBalance
         return $this->credit > 0;
     }
 
-    protected function createCredit(int $amount, ?string $reason = null): Balance
+    protected function createCredit(int $amount, ?string $reason = null): Model|BalanceInterface
     {
         return $this->credits()->create([
             'amount' => $amount,
