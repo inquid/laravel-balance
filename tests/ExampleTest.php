@@ -5,6 +5,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Geow\Balance\Concerns\BalanceInterface;
 use Geow\Balance\Traits\HasBalance;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Support\Facades\Number;
 
 it('can test', function () {
     expect(true)->toBeTrue();
@@ -18,9 +19,10 @@ it ('can use any model configured in the config balance.model and implements the
     $migration->up();
 
     // Run the balance migration
-    $migration = include __DIR__.'/../database/migrations/create_balances_table.php.stub';
+    $migration = include __DIR__.'/create_balances_custom_table.php.stub';
     $migration->up();
 
+    config()->set('balance.table', 'balances_custom');
     config()->set('balance.model', CustomBalance::class);
 
     $user = User::create([
@@ -34,7 +36,7 @@ it ('can use any model configured in the config balance.model and implements the
     $user->decreaseCredit(500);
     $this->assertEquals(2500, $user->credit);
 
-    $this->assertEquals('Amount in custom format: 25', $user->creditCurrency);
+    $this->assertEquals('$25.00', $user->creditCurrency);
 });
 
 
@@ -51,6 +53,16 @@ class CustomBalance extends Model implements BalanceInterface
 {
     protected $guarded = [];
 
+    // before saving the model ensure the custom column is the name of the model that originated the balance
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::saving(function ($model) {
+            $model->custom = get_class($model->balanceable);
+        });
+    }
+
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
@@ -58,12 +70,11 @@ class CustomBalance extends Model implements BalanceInterface
         $this->guarded[] = $this->primaryKey;
         $this->table = config('balance.table');
     }
-
+    
     protected function amountCurrency(): Attribute
     {
-        $amount = $this->amount / 100;
         return Attribute::make(
-            get: fn () => "Amount in custom format: $amount",
+            get: fn () => Number::currency($this->amount / 100),
         );
     }
 
