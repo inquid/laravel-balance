@@ -2,12 +2,13 @@
 
 namespace Geow\Balance\Models;
 
+use Geow\Balance\Concerns\BalanceInterface;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Number;
 
-class Balance extends Model
+class Balance extends Model implements BalanceInterface
 {
     protected $guarded = [];
 
